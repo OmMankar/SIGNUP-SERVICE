@@ -5,12 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"main/config"
+	"main/utiles"
 	"net/http"
-	"os"
-	"signUp/config"
-	"time"
-
-	"github.com/golang-jwt/jwt"
 )
 
 type GoogleSignUp struct {
@@ -71,32 +68,20 @@ func (ptr *GoogleSignUp) GoogleCallback(w http.ResponseWriter, r *http.Request) 
 		return
 
 	}
-	fmt.Println(userDetails)
 
 	//add email id password to the data base
-
-	newUser := `
-	INSERT INTO users (emailid, name, password)
-	VALUES (?, ?, ?)`
-	_, err = ptr.Db.Exec(newUser, userDetails.Email, userDetails.Name, "")
+	err = utiles.InsertIntoDatabase(ptr.Db, userDetails.Email, userDetails.Name, "")
 	if err != nil {
 		http.Error(w, "Error creating user", http.StatusInternalServerError)
 		return
 	}
 	//now create a jwt token out of this user data presently not implementing refresh token feature
-	expirationTime := time.Now().Add(10 * time.Minute)
-	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"emailid":   userDetails.Email,
-		"name":      userDetails.Name,
-		"ExpiresAt": expirationTime.Unix(),
-	})
-	tokenString, err := jwtToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
+
+	tokenString, err := utiles.GenerateToken(userDetails.Email, userDetails.Name)
 	if err != nil {
 		http.Error(w, "Error signing token", http.StatusInternalServerError)
 		return
 	}
-	fmt.Println(tokenString)
-
 	// Set the cookie in the response
 	cookie := &http.Cookie{
 		Name:  "token",

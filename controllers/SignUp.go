@@ -5,16 +5,16 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	User "main/models"
+	"main/utiles"
 	"net/http"
 	"net/mail"
 	"net/smtp"
 	"os"
-	User "signUp/models"
 	"text/template"
 	"time"
 
 	"github.com/ReneKroon/ttlcache"
-	"github.com/golang-jwt/jwt"
 	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/exp/rand"
@@ -157,10 +157,9 @@ func (s *SignUpController) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error hashing password", http.StatusInternalServerError)
 		return
 	}
-	newUser := `
-	INSERT INTO users (emailid, name, password)
-	VALUES (?, ?, ?)`
-	_, err = s.Db.Exec(newUser, user.EmailID, user.Name, string(hashedPassword))
+
+	//inserting data into Database
+	err = utiles.InsertIntoDatabase(s.Db, user.EmailID, user.Name, string(hashedPassword))
 	if err != nil {
 		http.Error(w, "Error creating user", http.StatusInternalServerError)
 		return
@@ -169,11 +168,7 @@ func (s *SignUpController) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 
 	//creating a jwt token for the user presently not implementing refresh token feature
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"emailid": user.EmailID,
-		"name":    user.Name,
-	})
-	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	tokenString, err := utiles.GenerateToken(user.EmailID, user.Name)
 	if err != nil {
 		http.Error(w, "Error signing token", http.StatusInternalServerError)
 		return
@@ -181,10 +176,8 @@ func (s *SignUpController) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 
 	// Set the cookie in the response
 	cookie := &http.Cookie{
-		Name:     "token",
-		Value:    tokenString,
-		HttpOnly: true,
-		Path:     "/",
+		Name:  "token",
+		Value: tokenString,
 	}
 
 	http.SetCookie(w, cookie)

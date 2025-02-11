@@ -2,7 +2,7 @@ package route
 
 import (
 	"database/sql"
-	controller "signUp/controllers"
+	controller "main/controllers"
 
 	"github.com/ReneKroon/ttlcache"
 	"github.com/gorilla/mux"

@@ -3,10 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"main/config"
+	"main/route"
 	"net/http"
 	"os"
-	"signUp/config"
-	"signUp/route"
 
 	"github.com/ReneKroon/ttlcache"
 	"github.com/gorilla/mux"
